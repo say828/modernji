@@ -441,13 +441,13 @@ def render_home(body_html: str, pages: dict):
   <div class="sub">modernji.com · 문서 {n_docs}편 · 틀린 만큼 새겨진다</div>
 </div>
 <div class="cards">
-  <a class="card" href="/philosophy/"><div class="t">🏛 철학</div>
-    <div class="d">철학과 4년 커리큘럼 18과목 88강 완간. 매 강 문제로 열고 문제로 닫는다.</div></a>
-  <a class="card" href="/math/"><div class="t">🧮 수학</div>
-    <div class="d">집합과 논리에서 괴델까지 10과목 46강. 일반지식 서가의 첫 권.</div></a>
+  <a class="card" href="/philosophy/"><div class="t">🏛 인문학 · 철학</div>
+    <div class="d">철학과 4년 커리큘럼 18과목 88강 완간. 매 강 문제로 열고 문제로 닫습니다.</div></a>
+  <a class="card" href="/math/"><div class="t">🔬 일반과학</div>
+    <div class="d">수학·물리학·화학 완간, 생물학·지구와 우주 편찬 중. 과학의 재미는 문제에서 나옵니다.</div></a>
   <a class="card" href="/about/"><div class="t">🧠 모던지란</div>
-    <div class="d">문제풀이 기반 지식 편찬이라는 개발 철학과 그 선행연구 근거. 문제 2개로 바로 체험.</div></a>
-  <div class="card ghost"><div class="t">🗺 지식 지도</div><div class="d">물리학·생물학·세계사·경제학 등 12개 서가 편찬 예정. 아래 지도 참조.</div></div>
+    <div class="d">문제풀이 기반 지식 편찬이라는 개발 철학과 그 선행연구 근거. 문제 2개로 바로 체험해 보세요.</div></a>
+  <div class="card ghost"><div class="t">🗺 다음 서가</div><div class="d">역사 · 사회과학 · IT · 건강 · 자격증 카테고리를 차례로 엽니다.</div></div>
 </div>
 """
     # 홈은 히어로가 제목을 대신하므로 본문에서 h1과 첫 문단(태그라인 중복)을 제거
