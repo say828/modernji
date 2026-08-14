@@ -358,7 +358,19 @@ def render_quiz(page: Page, block_idx: int, questions: list) -> str:
                  '<button class="qz-reset">다시 풀기</button></div></div>')
     return "".join(parts)
 
-SECTION_LABELS = {"about": "소개", "philosophy": "철학"}
+SECTION_LABELS = {
+    "about": "소개", "philosophy": "철학", "math": "수학", "physics": "물리학",
+    "chemistry": "화학", "biology": "생물학", "earth-space": "지구와 우주",
+    "world-history": "세계사", "korean-history": "한국사", "economics": "경제학",
+    "politics-law": "정치와 법", "sociology": "사회학", "psychology": "심리학",
+    "geography": "지리학", "computer-science": "컴퓨터과학", "medicine": "의학과 인체",
+}
+# 사이드바에 보이는 서가 순서 (지식 지도의 대분류 순서와 일치)
+SECTION_ORDER = [
+    "about", "philosophy", "math", "physics", "chemistry", "biology", "earth-space",
+    "world-history", "korean-history", "economics", "politics-law", "sociology",
+    "psychology", "geography", "computer-science", "medicine",
+]
 
 
 def build_nav(pages: dict, current: Page):
@@ -371,7 +383,7 @@ def build_nav(pages: dict, current: Page):
     for p in pages.values():
         if p.section:
             by_sec.setdefault(p.section, []).append(p)
-    for sec in sorted(by_sec):
+    for sec in sorted(by_sec, key=lambda s: (SECTION_ORDER.index(s) if s in SECTION_ORDER else 99, s)):
         label = SECTION_LABELS.get(sec, sec)
         items.append(f'<div class="nav-sec">{label}</div>')
         sec_pages = sorted(by_sec[sec], key=lambda p: (not p.is_index, str(p.rel)))
@@ -393,7 +405,7 @@ def build_nav(pages: dict, current: Page):
             items.append(f'<details class="nav-course"{opened}>'
                          f'<summary>{int(num):02d} {cname}</summary>')
             for p in plist:
-                name = re.sub(r"^\S+\s+", "", p.title)  # "철학입문 1강. X" -> "1강. X"
+                name = re.sub(r"^.*?(?=\d+강)", "", p.title)  # "수학의 언어 1강. X" -> "1강. X"
                 cls = ' class="active"' if p is current else ""
                 items.append(f'<a href="{p.href}"{cls}>{name}</a>')
             items.append("</details>")
@@ -430,11 +442,12 @@ def render_home(body_html: str, pages: dict):
 </div>
 <div class="cards">
   <a class="card" href="/philosophy/"><div class="t">🏛 철학</div>
-    <div class="d">철학과 4년 커리큘럼 18과목 88강을 순서대로. 매 강 문제로 열고 문제로 닫는다.</div></a>
+    <div class="d">철학과 4년 커리큘럼 18과목 88강 완간. 매 강 문제로 열고 문제로 닫는다.</div></a>
+  <a class="card" href="/math/"><div class="t">🧮 수학</div>
+    <div class="d">집합과 논리에서 괴델까지 10과목 46강. 일반지식 서가의 첫 권.</div></a>
   <a class="card" href="/about/"><div class="t">🧠 모던지란</div>
     <div class="d">문제풀이 기반 지식 편찬이라는 개발 철학과 그 선행연구 근거. 문제 2개로 바로 체험.</div></a>
-  <div class="card ghost"><div class="t">🔬 과학</div><div class="d">준비 중</div></div>
-  <div class="card ghost"><div class="t">📜 역사</div><div class="d">준비 중</div></div>
+  <div class="card ghost"><div class="t">🗺 지식 지도</div><div class="d">물리학·생물학·세계사·경제학 등 12개 서가 편찬 예정. 아래 지도 참조.</div></div>
 </div>
 """
     # 홈은 히어로가 제목을 대신하므로 본문에서 h1과 첫 문단(태그라인 중복)을 제거
