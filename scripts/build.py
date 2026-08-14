@@ -134,6 +134,14 @@ a:hover{color:var(--vio2)}
   font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nav a:hover{background:var(--panel);color:var(--ink)}
 .nav a.active{background:var(--vio-bg);color:var(--vio2);font-weight:600}
+.nav details{margin:.1rem 0}
+.nav summary{padding:.3rem .6rem;border-radius:7px;color:var(--muted);font-size:.88rem;
+  font-weight:600;cursor:pointer;list-style:none;user-select:none}
+.nav summary::-webkit-details-marker{display:none}
+.nav summary::before{content:"▸ ";color:var(--faint)}
+.nav details[open] summary::before{content:"▾ "}
+.nav summary:hover{background:var(--panel);color:var(--ink)}
+.nav details a{margin-left:.85rem;font-size:.86rem}
 /* ---- typography ---- */
 .content h1{font-size:2.05rem;font-weight:800;letter-spacing:-.03em;line-height:1.3;
   padding-bottom:.7rem;border-bottom:1px solid var(--border);margin-bottom:1.4rem}
@@ -367,10 +375,28 @@ def build_nav(pages: dict, current: Page):
         label = SECTION_LABELS.get(sec, sec)
         items.append(f'<div class="nav-sec">{label}</div>')
         sec_pages = sorted(by_sec[sec], key=lambda p: (not p.is_index, str(p.rel)))
+        # "01-철학입문-1강-..." 형태는 과목별 접이식 그룹으로 묶는다
+        courses: dict[tuple, list] = {}
+        flat = []
         for p in sec_pages:
+            m = re.match(r"^(\d+)-([^-]+)-", p.rel.stem)
+            if p.is_index or not m:
+                flat.append(p)
+            else:
+                courses.setdefault((m.group(1), m.group(2)), []).append(p)
+        for p in flat:
             name = "개요" if p.is_index else p.title
             cls = ' class="active"' if p is current else ""
             items.append(f'<a href="{p.href}"{cls}>{name}</a>')
+        for (num, cname), plist in sorted(courses.items()):
+            opened = " open" if any(p is current for p in plist) else ""
+            items.append(f'<details class="nav-course"{opened}>'
+                         f'<summary>{int(num):02d} {cname}</summary>')
+            for p in plist:
+                name = re.sub(r"^\S+\s+", "", p.title)  # "철학입문 1강. X" -> "1강. X"
+                cls = ' class="active"' if p is current else ""
+                items.append(f'<a href="{p.href}"{cls}>{name}</a>')
+            items.append("</details>")
     return "\n".join(items)
 
 
