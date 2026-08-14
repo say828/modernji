@@ -29,3 +29,18 @@ modernji/
 2. 문서 하나에 주제 하나. 길어지면 쪼갠다.
 3. 출처를 남긴다. 어디서 배웠는지 모르는 지식은 검증할 수 없다.
 4. 모르는 것을 모른다고 적는 것도 기록이다.
+
+## 사이트
+
+이 볼트는 [modernji.com](https://modernji.com)으로 배포된다.
+
+```bash
+# 빌드 (요구: pip install markdown)
+python3 scripts/build.py
+
+# 배포 (S3 + CloudFront, AWS 프로필 modernji)
+aws s3 sync dist/ s3://modernji.com/ --delete --profile modernji
+aws cloudfront create-invalidation --distribution-id E3S8GZD65RELA0 --paths "/*" --profile modernji
+```
+
+`vault/`는 옵시디언으로 열어서 편집할 수 있는 마크다운 볼트다. `[[위키링크]]`가 사이트에서 그대로 연결된다.
