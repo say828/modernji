@@ -127,6 +127,16 @@ a:hover{color:var(--vio2)}
 .content th,.content td{padding:.55rem .8rem;border-bottom:1px solid var(--border)}
 .content tr:hover td{background:rgba(139,92,246,.04)}
 a.wikilink{border-bottom:1px dashed rgba(167,139,250,.5)}
+/* ---- quiz ---- */
+.content details{margin:.7rem 0 1.3rem;background:var(--panel);border:1px solid var(--border);
+  border-radius:10px;padding:.6rem 1rem}
+.content details[open]{border-color:var(--vio-deep)}
+.content summary{cursor:pointer;font-weight:600;color:var(--vio);font-size:.9rem;
+  list-style:none;user-select:none}
+.content summary::before{content:"▸ ";transition:transform .15s}
+.content details[open] summary::before{content:"▾ "}
+.content summary::-webkit-details-marker{display:none}
+.content details p{margin:.6rem 0 .2rem;font-size:.95rem}
 /* ---- chrome ---- */
 .crumbs{font-size:.82rem;color:var(--faint);margin-bottom:1.1rem}
 .crumbs a{color:var(--faint)} .crumbs a:hover{color:var(--vio)}
@@ -222,7 +232,7 @@ TEMPLATE = """<!DOCTYPE html>
 </html>
 """
 
-SECTION_LABELS = {"philosophy": "철학"}
+SECTION_LABELS = {"about": "소개", "philosophy": "철학"}
 
 
 def build_nav(pages: dict, current: Page):
@@ -271,15 +281,16 @@ def render_home(body_html: str, pages: dict):
     hero = f"""
 <div class="hero">{CONSTELLATION}
   <div class="mark">모든지</div>
-  <div class="tag">{TAGLINE}</div>
-  <div class="sub">modernji.com · 문서 {n_docs}편 · 오늘도 하나 더 안다</div>
+  <div class="tag">{TAGLINE} · 모든 지식은 문제로 먼저 만난다</div>
+  <div class="sub">modernji.com · 문서 {n_docs}편 · 틀린 만큼 새겨진다</div>
 </div>
 <div class="cards">
   <a class="card" href="/philosophy/"><div class="t">🏛 철학</div>
-    <div class="d">철학과 4년 커리큘럼 18과목 88강을 순서대로. 지금 1과목 진행 중.</div></a>
+    <div class="d">철학과 4년 커리큘럼 18과목 88강을 순서대로. 매 강 문제로 열고 문제로 닫는다.</div></a>
+  <a class="card" href="/about/왜-문제풀이인가/"><div class="t">🧠 왜 문제풀이인가</div>
+    <div class="d">틀린 문제가 새겨지는 이유. 시험 효과·과잉교정·예측 오류의 선행연구 정리.</div></a>
   <div class="card ghost"><div class="t">🔬 과학</div><div class="d">준비 중</div></div>
   <div class="card ghost"><div class="t">📜 역사</div><div class="d">준비 중</div></div>
-  <div class="card ghost"><div class="t">📈 경제</div><div class="d">준비 중</div></div>
 </div>
 """
     # 홈은 히어로가 제목을 대신하므로 본문에서 h1과 첫 문단(태그라인 중복)을 제거
