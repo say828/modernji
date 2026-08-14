@@ -4,6 +4,7 @@
 사용: python scripts/build.py
 의존성: pip install markdown
 """
+import html as html_mod
 import re
 import shutil
 import urllib.parse
@@ -22,12 +23,42 @@ GITHUB = "https://github.com/say828/modernji"
 MD_EXT = ["extra", "sane_lists", "toc"]
 
 
+QUIZ_BLOCK_RE = re.compile(r"```quiz\n(.*?)```", re.S)
+
+
+def parse_quiz(text: str):
+    """quiz 블록 파싱. Q: 문제 / '- ' 오답 / '-* ' 정답 / E: 해설."""
+    questions, cur = [], None
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("Q:"):
+            cur = {"q": s[2:].strip(), "opts": [], "exp": ""}
+            questions.append(cur)
+        elif s.startswith("-*") and cur:
+            cur["opts"].append((s[2:].strip(), True))
+        elif s.startswith("-") and cur:
+            cur["opts"].append((s[1:].strip(), False))
+        elif s.startswith("E:") and cur:
+            cur["exp"] = s[2:].strip()
+        elif s and cur:  # 접힌 줄은 직전 필드에 이어붙인다
+            if cur["exp"]:
+                cur["exp"] += " " + s
+            elif not cur["opts"]:
+                cur["q"] += " " + s
+    return [q for q in questions if q["opts"]]
+
+
 class Page:
     def __init__(self, src: Path):
         self.src = src
         self.rel = src.relative_to(VAULT)          # philosophy/foo.md
         self.key = str(self.rel.with_suffix(""))    # philosophy/foo
         self.raw = src.read_text()
+        self.quizzes = []
+        def _extract(m):
+            self.quizzes.append(parse_quiz(m.group(1)))
+            return f"%%QUIZ{len(self.quizzes) - 1}%%"
+        self.raw = QUIZ_BLOCK_RE.sub(_extract, self.raw)
         m = re.search(r"^# (.+)$", self.raw, re.M)
         self.title = m.group(1).strip() if m else self.rel.stem
         self.is_index = self.rel.name == "index.md"
@@ -127,7 +158,30 @@ a:hover{color:var(--vio2)}
 .content th,.content td{padding:.55rem .8rem;border-bottom:1px solid var(--border)}
 .content tr:hover td{background:rgba(139,92,246,.04)}
 a.wikilink{border-bottom:1px dashed rgba(167,139,250,.5)}
-/* ---- quiz ---- */
+/* ---- interactive quiz ---- */
+.quiz{background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  padding:1.2rem 1.3rem;margin:1.5rem 0}
+.qz-q{margin:0 0 1.3rem}
+.qz-text{font-weight:600;margin-bottom:.55rem}
+.qz-opt{display:block;width:100%;text-align:left;background:var(--panel);
+  border:1px solid var(--border);color:var(--ink);border-radius:9px;
+  padding:.55rem .9rem;margin:.4rem 0;cursor:pointer;font:inherit;font-size:.93rem;
+  transition:border-color .12s}
+.qz-opt:hover{border-color:var(--vio-deep)}
+.qz-q.done .qz-opt{cursor:default;opacity:.7}
+.qz-opt.right{border-color:#34d399;background:rgba(52,211,153,.12);color:#a7f3d0;opacity:1!important}
+.qz-opt.wrong{border-color:#f87171;background:rgba(248,113,113,.12);color:#fecaca;opacity:1!important}
+.qz-exp{display:none;margin:.6rem 0 0;padding:.7rem 1rem;background:var(--vio-bg);
+  border-left:3px solid var(--vio-deep);border-radius:0 8px 8px 0;font-size:.92rem;color:var(--vio2)}
+.qz-exp.show{display:block}
+.qz-foot{display:flex;justify-content:space-between;align-items:center;
+  border-top:1px solid var(--border);padding-top:.8rem;font-size:.88rem;color:var(--muted)}
+.qz-score{color:var(--vio2);font-weight:600}
+.qz-prev{font-size:.78rem;color:var(--faint);margin-left:.5rem}
+.qz-reset{background:none;border:1px solid var(--border2);color:var(--muted);
+  border-radius:8px;padding:.3rem .8rem;cursor:pointer;font:inherit;font-size:.82rem}
+.qz-reset:hover{color:var(--ink);border-color:var(--vio-deep)}
+/* ---- quiz (details fallback) ---- */
 .content details{margin:.7rem 0 1.3rem;background:var(--panel);border:1px solid var(--border);
   border-radius:10px;padding:.6rem 1rem}
 .content details[open]{border-color:var(--vio-deep)}
@@ -228,9 +282,73 @@ TEMPLATE = """<!DOCTYPE html>
 </div>
 </div></div>
 </div>
+{quizjs}
 </body>
 </html>
 """
+
+QUIZ_JS = """<script>
+(function(){
+  document.querySelectorAll('.quiz').forEach(function(quiz){
+    var key='mj-wrong-'+quiz.dataset.key+'-'+quiz.dataset.block;
+    var qs=quiz.querySelectorAll('.qz-q');
+    var score=quiz.querySelector('.qz-score');
+    var prevEl=quiz.querySelector('.qz-prev');
+    var answered=0, correct=0;
+    try{
+      var prev=JSON.parse(localStorage.getItem(key)||'[]');
+      if(prev.length) prevEl.textContent='지난 시도: '+prev.length+'문제 틀림. 그 문제들이 오늘 새겨질 차례.';
+    }catch(e){}
+    function upd(){score.textContent=answered? correct+' / '+qs.length+' 정답':'';}
+    qs.forEach(function(q,qi){
+      q.querySelectorAll('.qz-opt').forEach(function(opt){
+        opt.addEventListener('click',function(){
+          if(q.classList.contains('done'))return;
+          q.classList.add('done');answered++;
+          if(opt.dataset.c==='1'){opt.classList.add('right');correct++;}
+          else{
+            opt.classList.add('wrong');
+            q.querySelector('.qz-opt[data-c="1"]').classList.add('right');
+            try{
+              var w=JSON.parse(localStorage.getItem(key)||'[]');
+              if(w.indexOf(qi)<0){w.push(qi);localStorage.setItem(key,JSON.stringify(w));}
+            }catch(e){}
+          }
+          q.querySelector('.qz-exp').classList.add('show');
+          upd();
+        });
+      });
+    });
+    quiz.querySelector('.qz-reset').addEventListener('click',function(){
+      qs.forEach(function(q){
+        q.classList.remove('done');
+        q.querySelectorAll('.qz-opt').forEach(function(o){o.classList.remove('right','wrong');});
+        q.querySelector('.qz-exp').classList.remove('show');
+      });
+      answered=0;correct=0;upd();
+      try{localStorage.removeItem(key);}catch(e){}
+      prevEl.textContent='';
+    });
+  });
+})();
+</script>"""
+
+
+def render_quiz(page: Page, block_idx: int, questions: list) -> str:
+    esc = html_mod.escape
+    parts = [f'<div class="quiz" data-key="{esc(page.key)}" data-block="{block_idx}">']
+    for n, q in enumerate(questions, 1):
+        opts = "".join(
+            f'<button class="qz-opt" data-c="{int(correct)}">{esc(text)}</button>'
+            for text, correct in q["opts"])
+        exp = f'<div class="qz-exp">💡 {esc(q["exp"])}</div>' if q["exp"] else ""
+        parts.append(
+            f'<div class="qz-q"><div class="qz-text">문제 {n}. {esc(q["q"])}</div>'
+            f'<div>{opts}</div>{exp}</div>')
+    parts.append('<div class="qz-foot"><span><span class="qz-score"></span>'
+                 '<span class="qz-prev"></span></span>'
+                 '<button class="qz-reset">다시 풀기</button></div></div>')
+    return "".join(parts)
 
 SECTION_LABELS = {"about": "소개", "philosophy": "철학"}
 
@@ -271,7 +389,7 @@ def build_crumbs(page: Page):
 def first_sentence(page: Page):
     for line in page.raw.splitlines():
         line = line.strip()
-        if line and not line.startswith(("#", ">", "|", "-", "!")):
+        if line and not line.startswith(("#", ">", "|", "-", "!", "%%", "`", "<")):
             return re.sub(r"[*\[\]]|\{[^}]*\}", "", line)[:150]
     return TAGLINE
 
@@ -287,8 +405,8 @@ def render_home(body_html: str, pages: dict):
 <div class="cards">
   <a class="card" href="/philosophy/"><div class="t">🏛 철학</div>
     <div class="d">철학과 4년 커리큘럼 18과목 88강을 순서대로. 매 강 문제로 열고 문제로 닫는다.</div></a>
-  <a class="card" href="/about/왜-문제풀이인가/"><div class="t">🧠 왜 문제풀이인가</div>
-    <div class="d">틀린 문제가 새겨지는 이유. 시험 효과·과잉교정·예측 오류의 선행연구 정리.</div></a>
+  <a class="card" href="/about/"><div class="t">🧠 모던지란</div>
+    <div class="d">문제풀이 기반 지식 편찬이라는 개발 철학과 그 선행연구 근거. 문제 2개로 바로 체험.</div></a>
   <div class="card ghost"><div class="t">🔬 과학</div><div class="d">준비 중</div></div>
   <div class="card ghost"><div class="t">📜 역사</div><div class="d">준비 중</div></div>
 </div>
@@ -306,6 +424,10 @@ def main():
     for page in pages.values():
         text = resolve_wikilinks(page, pages)
         page.html = markdown.markdown(text, extensions=MD_EXT)
+        for bi, qz in enumerate(page.quizzes):
+            widget = render_quiz(page, bi, qz)
+            ph = f"%%QUIZ{bi}%%"
+            page.html = page.html.replace(f"<p>{ph}</p>", widget).replace(ph, widget)
     today = date.today().isoformat()
     for page in pages.values():
         body = render_home(page.html, pages) if page.key == "index" else page.html
@@ -318,7 +440,8 @@ def main():
         html = TEMPLATE.format(
             title=title, desc=first_sentence(page), css=CSS, site=SITE_NAME,
             nav=build_nav(pages, page), crumbs=build_crumbs(page), body=body,
-            backlinks=bl, tagline=TAGLINE, github=GITHUB, today=today)
+            backlinks=bl, tagline=TAGLINE, github=GITHUB, today=today,
+            quizjs=QUIZ_JS if page.quizzes else "")
         page.out.parent.mkdir(parents=True, exist_ok=True)
         page.out.write_text(html)
         print(f"  {page.rel} -> {page.out.relative_to(ROOT)}")
@@ -329,7 +452,7 @@ def main():
         body='<div class="hero"><div class="mark">404</div>'
              '<div class="tag">아직 모르는 페이지입니다</div>'
              '<div class="sub"><a href="/">홈으로</a></div></div>',
-        backlinks="", tagline=TAGLINE, github=GITHUB, today=today))
+        backlinks="", tagline=TAGLINE, github=GITHUB, today=today, quizjs=""))
     print(f"OK: {len(pages)} pages -> {DIST}")
 
 
