@@ -130,6 +130,12 @@ a:hover{color:var(--vio2)}
 .brand a:hover{color:var(--vio2)}
 .nav-sec{margin:1.2rem 0 .3rem;font-size:.72rem;font-weight:700;color:var(--faint);
   text-transform:uppercase;letter-spacing:.12em}
+/* 루트(서가) 접이식 메뉴 */
+.nav details.nav-root{margin:.25rem 0}
+.nav summary.nav-sec{margin:0;padding:.4rem .6rem;font-size:.74rem;color:var(--muted)}
+.nav summary.nav-sec:hover{color:var(--ink)}
+.nav details.nav-root[open]>summary.nav-sec{color:var(--vio2)}
+.nav .nav-root>details,.nav .nav-root>a{margin-left:.55rem}
 .nav a{display:block;padding:.32rem .6rem;margin:.1rem 0;border-radius:7px;color:var(--muted);
   font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nav a:hover{background:var(--panel);color:var(--ink)}
@@ -385,7 +391,9 @@ def build_nav(pages: dict, current: Page):
             by_sec.setdefault(p.section, []).append(p)
     for sec in sorted(by_sec, key=lambda s: (SECTION_ORDER.index(s) if s in SECTION_ORDER else 99, s)):
         label = SECTION_LABELS.get(sec, sec)
-        items.append(f'<div class="nav-sec">{label}</div>')
+        # 루트(서가) 메뉴도 접이식: 현재 보고 있는 서가만 펼친다
+        sec_open = " open" if current.section == sec else ""
+        items.append(f'<details class="nav-root"{sec_open}><summary class="nav-sec">{label}</summary>')
         sec_pages = sorted(by_sec[sec], key=lambda p: (not p.is_index, str(p.rel)))
         # "01-철학입문-1강-..." 형태는 과목별 접이식 그룹으로 묶는다
         courses: dict[tuple, list] = {}
@@ -409,6 +417,7 @@ def build_nav(pages: dict, current: Page):
                 cls = ' class="active"' if p is current else ""
                 items.append(f'<a href="{p.href}"{cls}>{name}</a>')
             items.append("</details>")
+        items.append("</details>")  # nav-root 닫기
     return "\n".join(items)
 
 
