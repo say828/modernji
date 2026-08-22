@@ -369,13 +369,13 @@ SECTION_LABELS = {
     "chemistry": "화학", "biology": "생물학", "earth-space": "지구와 우주",
     "world-history": "세계사", "korean-history": "한국사", "economics": "경제학",
     "politics-law": "정치와 법", "sociology": "사회학", "psychology": "심리학",
-    "geography": "지리학", "computer-science": "컴퓨터과학", "medicine": "의학과 인체",
+    "geography": "지리학", "computer-science": "컴퓨터과학", "ai-lab": "AI 커리큘럼 474강", "medicine": "의학과 인체",
 }
 # 사이드바에 보이는 서가 순서 (지식 지도의 대분류 순서와 일치)
 SECTION_ORDER = [
     "about", "philosophy", "math", "physics", "chemistry", "biology", "earth-space",
     "world-history", "korean-history", "economics", "politics-law", "sociology",
-    "psychology", "geography", "computer-science", "medicine",
+    "psychology", "geography", "computer-science", "ai-lab", "medicine",
 ]
 
 
